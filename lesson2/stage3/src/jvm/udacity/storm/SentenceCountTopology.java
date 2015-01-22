@@ -144,13 +144,12 @@ public class SentenceCountTopology {
       // not present, add the word with a count of 1
       countMap.put(word, 1);
       } else {
+        // already there, hence get the count
+        Integer val = countMap.get(word);
 
-      // already there, hence get the count
-      Integer val = countMap.get(word);
-
-      // increment the count and save it to the map
-      countMap.put(word, ++val);
-    }
+        // increment the count and save it to the map
+        countMap.put(word, ++val);
+      }
 
       //After countMap is updated, emit word and count to output collector
       // Syntax to emit the word and count (uncomment to emit)

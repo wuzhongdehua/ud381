@@ -48,11 +48,15 @@ class TweetTopology
     builder.setBolt("parse-tweet-bolt", new ParseTweetBolt(), 10)
             .shuffleGrouping("tweet-spout");
     // Part 2: // attach the count bolt, parallelism of 15 (what grouping is needed?)
-    builder.setBolt("count-bolt", new CountBolt(), 15)
+    //builder.setBolt("count-bolt", new CountBolt(), 15)
+    //        .fieldsGrouping("parse-tweet-bolt", new Fields("tweet-word"));
+
+    // attach rolling count bolt using fields grouping
+    builder.setBolt("rolling-count-bolt", new RollingCountBolt(30, 10), 5)
             .fieldsGrouping("parse-tweet-bolt", new Fields("tweet-word"));
     // Part 3: attach the report bolt, parallelism of 1 (what grouping is needed?)
     builder.setBolt("report-bolt", new ReportBolt(), 1)
-            .globalGrouping("count-bolt");
+            .globalGrouping("rolling-count-bolt");
     // Submit and run the topology.
 
 

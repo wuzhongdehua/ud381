@@ -17,16 +17,23 @@
 # https://github.com/apache/storm/blob/master/examples/storm-starter/multilang/resources/splitsentence.py
 
 import storm
+import urllib2
 import traceback
+from bs4 import BeautifulSoup
 
-class SplitSentenceBolt(storm.BasicBolt):
+class URLBolt(storm.BasicBolt):
     def process(self, tup):
         #TO DO: Add check for empty values
-        if tup.values[0]:
-        #"Try-Expect" will cause storm workers die
-            words = tup.values[0].split(" ")
-            if words:
-                for word in words:
-                    storm.emit([word])
+        url = tup.values[0]
+        try:
+            r = urllib2.urlopen(url).read()
 
-SplitSentenceBolt().run()
+            soup = BeautifulSoup(r)
+            urlText = soup.findAll({'title' : True, 'p' : True})
+            if urlText:
+                [storm.emit([t.string]) for t in urlText]
+        except:
+            #print traceback.format_exc()
+            pass
+
+URLBolt().run()

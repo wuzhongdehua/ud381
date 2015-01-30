@@ -18,8 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 //******* Import MyLikesSpout and MyNamesSpout
-
-
+import udacity.storm.spout.MyLikesSpout;
+import udacity.storm.spout.MyNamesSpout;
 
 /**
  * This is a basic example of a storm topology.
@@ -39,6 +39,7 @@ public class ExclamationTopology {
   {
     // To output tuples from this bolt to the next stage bolts, if any
     OutputCollector _collector;
+    private Map<String, String> favoritesMap;
 
     @Override
     public void prepare(
@@ -48,26 +49,51 @@ public class ExclamationTopology {
     {
       // save the output collector for emitting tuples
       _collector = collector;
+
+      //**** ADDED
+      // create and initialize the map
+      favoritesMap = new HashMap<String, String>();
     }
 
     @Override
     public void execute(Tuple tuple)
     {
       //**** ADD COMPONENT ID
+      String componetId = tuple.getSourceComponent();
 
       /*
        * Use component id to modify behavior
        */
+      if (componetId.equals("my-likes")) {
+        String name = tuple.getString(0);
+        String favorite = tuple.getString(1);
+
+        if (favoritesMap.get(name) == null) {
+          favoritesMap.put(name, favorite);
+        }
+      } else if (componetId.equals("my-names")) {
+        String name = tuple.getString(0);
+
+        if (favoritesMap.get(name) != null) {
+          String favorite = favoritesMap.get(name);
+          StringBuilder exclamatedWord = new StringBuilder();
+          exclamatedWord.append(name).append("\'s favorite is ").append(favorite).append("!!!");
+          _collector.emit(tuple, new Values(exclamatedWord.toString()));
+        }
+      }
+      /*
+       * End of modify behavior
+       */
 
       // get the column word from tuple
-      String word = tuple.getString(0);
+      //String word = tuple.getString(0);
 
       // build the word with the exclamation marks appended
-      StringBuilder exclamatedWord = new StringBuilder();
-      exclamatedWord.append(word).append("!!!");
+      //StringBuilder exclamatedWord = new StringBuilder();
+      //exclamatedWord.append(word).append("!!!");
 
       // emit the word with exclamations
-      _collector.emit(tuple, new Values(exclamatedWord.toString()));
+      //_collector.emit(tuple, new Values(exclamatedWord.toString()));
     }
 
     @Override
@@ -86,13 +112,22 @@ public class ExclamationTopology {
     TopologyBuilder builder = new TopologyBuilder();
 
     // attach the word spout to the topology - parallelism of 10
-    builder.setSpout("word", new TestWordSpout(), 10);
+    //builder.setSpout("word", new TestWordSpout(), 10);
+
+    //******** Add MyLikesSpout and MyNamesSpout
+    builder.setSpout("my-likes", new MyLikesSpout(), 10);
+    builder.setSpout("my-names", new MyNamesSpout(), 10);
 
     // attach the exclamation bolt to the topology - parallelism of 3
-    builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("word");
+    builder.setBolt("exclaim1", new ExclamationBolt(), 3)
+            .shuffleGrouping("my-likes")
+            .shuffleGrouping("my-names");
 
     // attach another exclamation bolt to the topology - parallelism of 2
     builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("exclaim1");
+    
+    // Connect the ReportBolt to the "exclaim1" bolt
+    builder.setBolt("report-bold", new ReportBolt(), 1).globalGrouping("exclaim1");
 
     // create the default config object
     Config conf = new Config();

@@ -35,14 +35,15 @@ public class MyLikesSpout extends BaseRichSpout {
     String pair = pairs[_rand.nextInt(pairs.length)];
     String name = pair.split("#")[0].trim();
     String favorite = pair.split("#")[1].trim();
+    //_collector.emit(new Values(pair));
     //** TO DO: update emit and declareOutputFields to
     //** emit "name" and "favorite" instead of "pair"
-    _collector.emit(new Values(pair));
+    _collector.emit(new Values(name, favorite));
   }
 
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("pair"));
+    declarer.declare(new Fields("name", "favorite"));
   }
 
 }

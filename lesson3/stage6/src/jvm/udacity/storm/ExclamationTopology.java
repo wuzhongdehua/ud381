@@ -80,6 +80,11 @@ public class ExclamationTopology {
           exclamatedWord.append(name).append("\'s favorite is ").append(favorite).append("!!!");
           _collector.emit(tuple, new Values(exclamatedWord.toString()));
         }
+      } else if (componetId.equals("exclaim1")) {
+        String word = tuple.getString(0);
+        StringBuilder exclamatedWord = new StringBuilder();
+        exclamatedWord.append(word).append("!!!");
+        _collector.emit(tuple, new Values(exclamatedWord.toString()));
       }
       /*
        * End of modify behavior
@@ -127,7 +132,7 @@ public class ExclamationTopology {
     builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("exclaim1");
     
     // Connect the ReportBolt to the "exclaim1" bolt
-    builder.setBolt("report-bold", new ReportBolt(), 1).globalGrouping("exclaim1");
+    builder.setBolt("report-bold", new ReportBolt(), 1).globalGrouping("exclaim2");
 
     // create the default config object
     Config conf = new Config();
